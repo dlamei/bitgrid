@@ -1,10 +1,9 @@
-
 #![cfg_attr(not(feature = "std"), no_std)]
 
 //! A fast, packed bit grid structure for managing N-Dim boolean matrices with:
-//! - constant-time `get`/`set` 
+//! - constant-time `get`/`set`
 //! - efficient iteration over set bits,
-//! - arbitrary word sizes (`u8`, `u16`, `u32`, `u64`, `u128`), 
+//! - arbitrary word sizes (`u8`, `u16`, `u32`, `u64`, `u128`),
 //! - `no_std` compatible
 //!
 //! # Examples
@@ -37,13 +36,13 @@
 //! assert!(space.get_n([1, 2, 3, 4]));
 //! ```
 
-
-
 extern crate alloc;
 
 use alloc::{boxed::Box, vec::Vec};
-use core::{fmt, ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, Shr, Sub}};
-
+use core::{
+    fmt,
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, Shr, Sub},
+};
 
 /// Words are used as bit blocks in [`BitGrid`]
 ///
@@ -79,7 +78,6 @@ pub trait Word:
     fn trailing_zeros(self) -> u32;
 }
 
-
 macro_rules! impl_wrd {
     ($ty:ty) => {
         impl Word for $ty {
@@ -93,7 +91,7 @@ macro_rules! impl_wrd {
                 self.trailing_zeros()
             }
         }
-    }
+    };
 }
 
 impl_wrd!(u8);
@@ -119,7 +117,6 @@ pub type BitGrid2D<W> = BitGrid<W, 2>;
 pub type BitGrid3D<W> = BitGrid<W, 3>;
 
 impl<WRD: Word, const N: usize> BitGrid<WRD, N> {
-
     /// Creates a new bit grid with the specified dimensions and all bits cleared
     ///
     /// # Panics
@@ -240,11 +237,11 @@ impl<WRD: Word, const N: usize> BitGrid<WRD, N> {
     /// # Examples
     /// ```
     /// # use bitgrid::BitGrid;
-    /// 
+    ///
     /// let mut grid = BitGrid::<u32, 2>::new_n([2, 2]);
     /// grid.set_n([0, 1]);
     /// grid.set_n([1, 0]);
-    /// 
+    ///
     /// let mut iter = grid.iter();
     /// assert_eq!(iter.next(), Some([0, 1]));
     /// assert_eq!(iter.next(), Some([1, 0]));
@@ -256,12 +253,14 @@ impl<WRD: Word, const N: usize> BitGrid<WRD, N> {
             BitIter::default()
         } else {
             let last_i = (self.count - 1) / WRD::N_BITS;
-            let valid  = self.count - last_i * WRD::N_BITS;
-            let mask   = if valid == WRD::N_BITS { WRD::FULL } else {
+            let valid = self.count - last_i * WRD::N_BITS;
+            let mask = if valid == WRD::N_BITS {
+                WRD::FULL
+            } else {
                 (WRD::ONE << valid) - WRD::ONE
             };
-            let first  = self.data.get(0).cloned().unwrap_or(WRD::EMPTY)
-                         & if last_i == 0 { mask } else { WRD::FULL };
+            let first = self.data.get(0).cloned().unwrap_or(WRD::EMPTY)
+                & if last_i == 0 { mask } else { WRD::FULL };
             BitIter {
                 data: &self.data,
                 shape: self.shape,
@@ -270,11 +269,9 @@ impl<WRD: Word, const N: usize> BitGrid<WRD, N> {
             }
         }
     }
-
 }
 
 impl<WRD: Word> BitGrid<WRD, 2> {
-
     /// Creates a new 2D grid with specified dimensions
     pub fn new(x: u32, y: u32) -> Self {
         Self::new_n([x, y])
@@ -326,9 +323,7 @@ impl<W: Word> fmt::Display for BitGrid<W, 2> {
     }
 }
 
-
 impl<WRD: Word> BitGrid<WRD, 3> {
-
     /// Creates a new 3D grid with specified dimensions
     pub fn new(x: u32, y: u32, z: u32) -> Self {
         Self::new_n([x, y, z])
@@ -369,7 +364,6 @@ impl<WRD: Word> BitGrid<WRD, 3> {
         self.shape[2]
     }
 }
-
 
 /// Iterator over set bits in an N-dimensional [`BitGrid`].
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -412,13 +406,13 @@ impl<'a, W: Word, const N: usize> BitIter<'a, W, N> {
     fn crumple(&self, bit_index: u32) -> [u32; N] {
         let mut coords = [0; N];
         let mut remainder = bit_index;
-        
+
         for i in (0..N).rev() {
             let stride = self.shape[i];
             coords[i] = remainder % stride;
             remainder /= stride;
         }
-        
+
         coords
     }
 }
@@ -443,9 +437,6 @@ impl<W: Word, const N: usize> Iterator for BitIter<'_, W, N> {
         Some(self.crumple(bit_index))
     }
 }
-
-
-
 
 #[cfg(test)]
 mod test {
@@ -495,7 +486,7 @@ mod test {
         }
         let mut coords = collect_bits(&g);
         coords.sort_unstable();
-        let expected = vec![[0,0], [1,1], [2,2]];
+        let expected = vec![[0, 0], [1, 1], [2, 2]];
         assert_eq!(coords, expected);
     }
 
@@ -507,7 +498,7 @@ mod test {
         g.set(3, 1);
         let mut coords = collect_bits(&g);
         coords.sort_unstable();
-        let expected = vec![[0,1], [3,1], [5,0]];
+        let expected = vec![[0, 1], [3, 1], [5, 0]];
         assert_eq!(coords, expected);
     }
 
@@ -521,7 +512,7 @@ mod test {
         }
         let coords = collect_bits(&g);
         assert_eq!(coords.len() as u32, w);
-        let mut expected: Vec<_> = (0..w).map(|x| [x,0]).collect();
+        let mut expected: Vec<_> = (0..w).map(|x| [x, 0]).collect();
         expected.sort_unstable();
         assert_eq!(coords, expected);
     }
@@ -541,16 +532,15 @@ mod test {
         assert_eq!(&bits, &[[1, 1], [3, 1], [3, 3]], "{bits:?}");
     }
 
-
     #[test]
     fn test_set_clear_get() {
         let mut g = BitGrid2D::<u32>::new(4, 4);
         g.set(1, 2);
         assert!(g.get(1, 2));
-        
+
         g.clear(1, 2);
         assert!(!g.get(1, 2));
-        
+
         g.flip(1, 2);
         assert!(g.get(1, 2));
     }
@@ -561,7 +551,7 @@ mod test {
         g.set(0, 0);
         g.set(1, 1);
         g.set(2, 2);
-        
+
         let mut coords = collect_bits(&g);
         coords.sort();
         assert_eq!(coords, vec![[0, 0], [1, 1], [2, 2]]);
@@ -572,7 +562,7 @@ mod test {
         // Empty grid
         let g = BitGrid2D::<u32>::new(0, 0);
         assert_eq!(g.iter().count(), 0);
-        
+
         // Single cell grid
         let mut g = BitGrid2D::<u32>::new(1, 1);
         g.set(0, 0);
@@ -595,7 +585,7 @@ mod test {
         let mut space = BitGrid3D::<u32>::new(2, 2, 2);
         space.set(0, 0, 0);
         space.set(1, 1, 1);
-        
+
         let mut coords = space.iter().collect::<Vec<_>>();
         coords.sort();
         assert_eq!(coords, vec![[0, 0, 0], [1, 1, 1]]);
@@ -606,6 +596,4 @@ mod test {
     fn test_overflow_protection() {
         let _ = BitGrid2D::<u32>::new(u32::MAX, u32::MAX);
     }
-
 }
-

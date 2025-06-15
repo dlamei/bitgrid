@@ -6,6 +6,8 @@ A fast, packed bit grid structure for managing N-Dim boolean matrices with:
 - arbitrary word sizes (`u8`, `u16`, `u32`, `u64`, `u128`), 
 - `no_std` compatible
 
+[Documentation](https://docs.rs/bitgrid/latest/bitgrid/)
+
 # Examples
 
 ```rust
